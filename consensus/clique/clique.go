@@ -467,7 +467,7 @@ func (c *Clique) verifySeal(chain consensus.ChainReader, header *types.Header, p
 	for seen, recent := range snap.Recents {
 		if recent == signer {
 			// Signer is among recents, only fail if the current block doesn't shift it out
-			if limit := uint64(len(snap.Signers)/2 + 1); seen > number-limit {
+			if limit := uint64((2 * len(snap.Signers) / 3) + 1); seen > number-limit {
 				return errRecentlySigned
 			}
 		}
@@ -611,7 +611,7 @@ func (c *Clique) Seal(chain consensus.ChainReader, block *types.Block, results c
 	for seen, recent := range snap.Recents {
 		if recent == signer {
 			// Signer is among recents, only wait if the current block doesn't shift it out
-			if limit := uint64(len(snap.Signers)/2 + 1); number < limit || seen > number-limit {
+			if limit := uint64((2 * len(snap.Signers) / 3) + 1); number < limit || seen > number-limit {
 				log.Info("Signed recently, must wait for others")
 				return nil
 			}
@@ -621,7 +621,7 @@ func (c *Clique) Seal(chain consensus.ChainReader, block *types.Block, results c
 	delay := time.Unix(int64(header.Time), 0).Sub(time.Now()) // nolint: gosimple
 	if header.Difficulty.Cmp(diffNoTurn) == 0 {
 		// It's not our turn explicitly to sign, delay it a bit
-		wiggle := time.Duration(len(snap.Signers)/2+1) * wiggleTime
+		wiggle := time.Duration((2*len(snap.Signers)/3)+1) * wiggleTime
 		delay += time.Duration(rand.Int63n(int64(wiggle)))
 
 		log.Trace("Out-of-turn signing requested", "wiggle", common.PrettyDuration(wiggle))
